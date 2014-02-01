@@ -5,9 +5,12 @@ import re
 import fnmatch
 import time
 import datetime
-from multiprocessing import Process
 from django.utils.timezone import now
 from django.conf import settings
+
+
+EXP_COVERAGE = re.compile("TOTAL[ ]+\d+?[ ]+\d+?[ ]+(\d+?)%")
+EXP_VERSION = re.compile("Version (.*)")
 
 
 def get_project_path(project):
@@ -35,40 +38,36 @@ def build_project(project, force=False):
             status="building",
             )
 
-    def _inner(build):
-        curdir = os.path.abspath(os.curdir)
-        os.chdir(get_project_path(project))
+    curdir = os.path.abspath(os.curdir)
+    os.chdir(get_project_path(project))
 
-        # Temporary script
-        temp_file = ".temp_test_script.sh"
-        fp = file(temp_file, "w")
-        fp.write(project.test_script.replace("\r", ""))
-        fp.close()
-        os.chmod(temp_file, stat.S_IEXEC | stat.S_IWRITE | stat.S_IREAD)
+    # Running command
+    p = subprocess.Popen(["./run_tests.sh"], shell=True, stdout=subprocess.PIPE)
+    output, err = p.communicate()
 
-        # Running command
-        output = subprocess.check_output("./.temp_test_script.sh")
-        f = re.findall("TOTAL[ ]+\d+?[ ]+\d+?[ ]+(\d+?)%", output)
-        coverage = int(f[0]) if f else None
+    # Grepping coverage
+    f = EXP_VERSION.findall(output)
+    version = f[0] if f else ""
 
-        # Result
-        build.coverage = coverage
-        build.output = output
-        build.finished = now()
-        build.status = "passed" if coverage else "failed"
-        build.save()
+    # Grepping coverage
+    f = EXP_COVERAGE.findall(output)
+    coverage = int(f[0]) if f else None
 
-        project.last_file_modified = now()
-        project.save()
+    # Result
+    build.version = version
+    build.coverage = coverage
+    build.output = output
+    build.finished = now()
+    build.status = "passed" if coverage else "failed"
+    build.save()
 
-        print("Finished %s: %s" % (project.name, build.status))
+    project.last_file_modified = now()
+    project.save()
 
-        # Returns to previous state
-        os.unlink(temp_file)
-        os.chdir(curdir)
+    print("Finished %s: %s" % (project.name, build.status))
 
-    proc = Process(target=_inner, args=(build,))
-    proc.start()
+    # Returns to previous state
+    os.chdir(curdir)
 
 
 def project_was_modified(project):
