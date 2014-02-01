@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+{% load staticfiles %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap 101 Template</title>
+
+    <!-- Bootstrap -->
+    <link href="{% static "bootstrap/css/bootstrap.min.css" %}" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <style>
+        .coverage span {
+            border-radius: 5px;
+            padding: 5px;
+            color: white;
+            font-weight: bold;
+            width: 50px;
+        }
+        .fullCoverage { background-color: blue; }
+        .highCoverage { background-color: green; }
+        .goodCoverage { background-color: #8a6d3b; }
+        .enoughCoverage { background-color: orange; }
+        .badCoverage { background-color: red; }
+    </style>
+  </head>
+  <body>
+    <div class="container theme-showcase" role="main">
+        <div class="jumbotron">
+            <h1>Testing Many Projects</h1>
+            <p>The projects below are tested every 10 minutes if they had at least one <b>.py</b> file changed in their path.</p>
+        </div>
+
+        <table id="projectsTable" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th>Status</th>
+                    <th>Last Build</th>
+                    <th>Version</th>
+                    <th class="text-center">Coverage</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="{% static "js/jquery.js" %}"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+
+    <script>
+        $(document).ready(function(){
+            var tbody = $("#projectsTable tbody");
+
+            window.setInterval(function(){
+                $.getJSON("/projects.json", function(resp){
+                    if (resp.result == "ok") {
+                        tbody.empty();
+                        $(resp.projects).each(function(){
+                            var tr = $("<tr></tr>").appendTo(tbody);
+
+                            $("<td class='name'>" + this.name + "</td>").appendTo(tr);
+                            $("<td class='status'>" + this.status + "</td>").appendTo(tr);
+                            $("<td class='lastBuild'>" + this.last_build + "</td>").appendTo(tr);
+                            $("<td class='version'>" + this.version + "</td>").appendTo(tr);
+                            $("<td class='coverage text-center'><span>" + this.coverage + "</span></td>").appendTo(tr);
+
+                            if (this.status == "building")
+                                tr.addClass("active")
+                            else if (this.status == "failed")
+                                tr.addClass("danger")
+                            else if (this.status != "passed")
+                                tr.addClass("warning");
+
+                            if (this.coverage == 100)
+                                tr.find(".coverage>span").addClass("fullCoverage")
+                            else if (this.coverage >= 90)
+                                tr.find(".coverage>span").addClass("highCoverage")
+                            else if (this.coverage >= 80)
+                                tr.find(".coverage>span").addClass("goodCoverage")
+                            else if (this.coverage >= 70)
+                                tr.find(".coverage>span").addClass("enoughCoverage")
+                            else
+                                tr.find(".coverage>span").addClass("badCoverage");
+                        });
+                    }
+                });
+            }, 5000);
+        });
+    </script>
+  </body>
+</html>
