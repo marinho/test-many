@@ -7,7 +7,8 @@ class Project(models.Model):
         pass
 
     name = models.CharField(max_length=50, unique=True)
-    path = models.CharField(max_length=200, blank=True, help_text="Default is settings.WORKPLACE_PATH + project name")
+    path = models.CharField(max_length=200, blank=True,
+            help_text="Default is settings.WORKPLACE_PATH + project name")
     test_script = models.TextField()
     last_file_modified = models.DateTimeField(null=True, blank=True)
     active = models.BooleanField(default=True, db_index=True)
