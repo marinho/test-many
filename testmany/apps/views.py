@@ -49,3 +49,42 @@ def push_info(request):
         )
 
     return HttpResponse("OK", content_type="text/plain")
+
+
+COVERAGE_BADGE_TPL = """
+<svg xmlns="http://www.w3.org/2000/svg" width="98" height="18">
+ <linearGradient id="a" x2="0" y2="100%%">
+  <stop offset="0" stop-color="#fff" stop-opacity=".7"/>
+  <stop offset=".1" stop-color="#aaa" stop-opacity=".1"/>
+  <stop offset=".9" stop-opacity=".3"/>
+  <stop offset="1" stop-opacity=".5"/>
+ </linearGradient>
+ <rect rx="4" width="98" height="18" fill="#555"/>
+ <rect rx="4" x="59" width="39" height="18" fill="%(color)s"/>
+ <rect rx="4" width="98" height="18" fill="url(#a)"/>
+ <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+  <text x="29.5" y="13" fill="#010101" fill-opacity=".3">coverage</text>
+  <text x="29.5" y="12">coverage</text>
+  <text x="78" y="13" fill="#010101" fill-opacity=".3">%(coverage)s%%</text>
+  <text x="78" y="12">%(coverage)s%%</text>
+ </g>
+</svg>
+"""
+
+def coverage_badge(request, package):
+    project = get_object_or_404(Project, name=package)
+    coverage_percent = project.last_coverage()
+    if coverage_percent >= 100:
+        color = "#00f"
+    elif coverage_percent >= 80:
+        color = "#0c0"
+    elif coverage_percent >= 60:
+        color = "#cc0"
+    else:
+        color = "#f00"
+
+    svg = COVERAGE_BADGE_TPL % {
+        "color": color,
+        "coverage": coverage_percent,
+        }
+    return HttpResponse(svg.strip(), content_type="image/svg+xml")

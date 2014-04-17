@@ -4,5 +4,6 @@ urlpatterns = patterns('apps.views',
     url(r'^$', "index"),
     url(r'^projects\.json$', "projects_json"),
     url(r'^push-info$', "push_info"),
+    url(r'^badges/(\w+)/coverage.svg$', "coverage_badge"),
 )
 
